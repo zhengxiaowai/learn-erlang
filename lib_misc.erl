@@ -1,5 +1,5 @@
 -module(lib_misc).
--export([for/3, qsort/1, test/0, pythag/1]).
+-export([for/3, qsort/1, test/0, pythag/1, my_tuple_to_list/1, my_date_string/0, my_time_func/1]).
 
 
 test() ->
@@ -29,3 +29,20 @@ pythag(N) ->
         A+B+C =< N,
         A*A+B*B =:= C*C 
     ].
+
+% my_tuple_to_list(T) -> my_tuple_to_list(T, 1, size(T)).
+% my_tuple_to_list(T, Pos, Size) when Pos =< Size -> 
+%     [element(Pos, T) | my_tuple_to_list(T, Pos + 1, Size)];
+% my_tuple_to_list(_, _, _) -> [].
+
+my_tuple_to_list(T) -> [element(I, T) || I <- lists:seq(1, size(T))].
+
+my_time_func(F) ->
+    Before= erlang:timestamp(),
+    F(),
+    After = erlang:timestamp(),
+    io:format("runtime: ~f sec~n", [timer:now_diff(After, Before) / 1000]).
+
+my_date_string() -> 
+    {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:now_to_local_time(erlang:timestamp()),
+    io:format("~w-~w-~w ~w:~w:~w~n", [Year, Month, Day, Hour, Minute, Second]).
