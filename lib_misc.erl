@@ -1,5 +1,15 @@
 -module(lib_misc).
--export([for/3, qsort/1, test/0, pythag/1, my_tuple_to_list/1, my_date_string/0, my_time_func/1]).
+-export([
+         for/3,
+         qsort/1,
+         test/0,
+         pythag/1,
+         my_tuple_to_list/1,
+         my_date_string/0,
+         my_time_func/1,
+         on_exit/2,
+		 my_spawn/2,
+		 my_spawn/3]).
 
 
 test() ->
@@ -46,3 +56,33 @@ my_time_func(F) ->
 my_date_string() -> 
     {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:now_to_local_time(erlang:timestamp()),
     io:format("~w-~w-~w ~w:~w:~w~n", [Year, Month, Day, Hour, Minute, Second]).
+
+
+on_exit(Pid, Fun) -> 
+    spawn(fun() -> 
+                Ref = monitor(process, Pid),
+                receive
+                    {'Down', Ref, Pid, Why} ->
+                        Fun(Why)
+                end
+        end).
+		
+		
+my_spawn(Mod, Func, Args) ->
+	Pid = spawn(Mod, Func, Args),
+	statistics(runtime),
+	on_exit(Pid, fun(Why) -> 
+					{_, Runtime} = statistics(runtime),
+					ExitisTime = Runtime / 1000,
+					io:format("~p died with ~p, runtime= ~p mircoseconds~n", [Pid, Why, ExitisTime])
+				end).
+	
+
+my_spawn(Func, Args) ->
+	Pid = spawn(Func, Args),
+	statistics(runtime),
+	on_exit(Pid, fun(Why) -> 
+					{_, Runtime} = statistics(runtime),
+					ExitisTime = Runtime /1000,
+					io:format("~p died with ~p, runtime= ~p mircoseconds~n", [Pid, Why, ExitisTime])
+				end).
