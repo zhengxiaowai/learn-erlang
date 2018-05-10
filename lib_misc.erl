@@ -1,16 +1,16 @@
 -module(lib_misc).
--export([
-         for/3,
-         qsort/1,
-         test/0,
-         pythag/1,
-         my_tuple_to_list/1,
-         my_date_string/0,
-         my_time_func/1,
-         on_exit/2,
-		 my_spawn/2,
-		 my_spawn/3]).
+% -export([
+%          for/3,
+%          qsort/1,
+%          test/0,
+%          pythag/1,
+%          my_tuple_to_list/1,
+%          my_date_string/0,
+%          my_time_func/1,
+%          on_exit/2,
+% 		 my_spawn/3]).
 
+-compile(export_all).
 
 test() ->
     [1,2,3,4,5] = qsort([3,2,1,4,5]),
@@ -62,27 +62,39 @@ on_exit(Pid, Fun) ->
     spawn(fun() -> 
                 Ref = monitor(process, Pid),
                 receive
-                    {'Down', Ref, Pid, Why} ->
+                    {'DOWN', Ref, process, Pid, Why} ->
                         Fun(Why)
                 end
         end).
-		
-		
+
+test_func() -> 
+    receive
+        Any -> list_to_atom(Any)
+    end.
+
 my_spawn(Mod, Func, Args) ->
 	Pid = spawn(Mod, Func, Args),
-	statistics(runtime),
+    {Hour1, Minute1, Second1} = time(),
 	on_exit(Pid, fun(Why) -> 
-					{_, Runtime} = statistics(runtime),
-					ExitisTime = Runtime / 1000,
-					io:format("~p died with ~p, runtime= ~p mircoseconds~n", [Pid, Why, ExitisTime])
-				end).
-	
+            {Hour2, Minute2, Second2} = time(),
+            io:format("Down ~p~n", [Why]),
+            io:format("time:~p~n", [(Hour2-Hour1)*60*60 + (Minute2-Minute1)*60 + (Second2-Second1)])
+        end),
+    Pid.
 
-my_spawn(Func, Args) ->
-	Pid = spawn(Func, Args),
-	statistics(runtime),
-	on_exit(Pid, fun(Why) -> 
-					{_, Runtime} = statistics(runtime),
-					ExitisTime = Runtime /1000,
-					io:format("~p died with ~p, runtime= ~p mircoseconds~n", [Pid, Why, ExitisTime])
-				end).
+my_spawn(Mod, Func, Args, Time) ->
+    Pid = spawn_link(Mod, Func, Args),
+    timeout_on_exit(Pid, Time),
+    Pid.
+
+
+timeout_on_exit(Pid, Time) ->
+    spawn(fun() ->
+        Ref = monitor(process, Pid),
+        receive
+            {'DOWN', Ref, process, Pid, Why} ->
+                io:format("Down ~p~n", [Why])
+        after Time ->
+            exit(Pid, timeout)
+        end
+    end).
